@@ -7,6 +7,7 @@ require 'oauth'
 def makeRequest
 	oauth = Hash.new
 	load 'config/twitter_config.rb'
+	twitter_config = return_twitter_config()
 	apiUrl = 'stream.twitter.com'
 	apiPage = '/1.1/statuses/filter.json'
 	peopleToFollow = "horse_ebooks"
@@ -23,21 +24,19 @@ def makeRequest
 	twitterApi.use_ssl = true
 	twitterApi.verify_mode = OpenSSL::SSL::VERIFY_NONE
 	
-	oauth['oauth_consumer_key'] = twitter_config[:consumerKey]
-	oauth['oauth_nonce'] = nonce
-	oauth['oauth_signature'] = signature
-	oauth['oauth_signature_method'] = twitter_config[:sigMethod]
-	oauth['oauth_timestamp'] = timeStamp
-	oauth['oauth_token'] = twitter_config[:accessToken]
-	oauth['oauth_version'] = twitter_config[:oauthVersion]
-	headerString = "OAuth "
-	# this doesn't do it in order
-	oauth.each do |key,val|
-		headerString += OAuth::Helper::escape(key) + '="' + OAuth::Helper::escape(val) + '", '
-	end
-	headerString = headerString[0..-2]
-	headers = { 'Authorization' => headerString }
-	twitterApi.post(apiPage,postParameters,headers)
-end
+	headerString  = 'OAuth '
+	headerString += "oauth_consumer_key=\"#{OAuth::Helper::escape(twitter_config[:consumerKey])}\", "
+	headerString += "oauth_nonce=\"#{OAuth::Helper::escape(nonce)}\", "
+	headerString += "oauth_signature=\"#{OAuth::Helper::escape(signature)}\", "
+	headerString += "oauth_signature_method=\"#{OAuth::Helper::escape(twitter_config[:sigMethod])}\", "
+	headerString += "oauth_timestamp=\"#{OAuth::Helper::escape(timeStamp)}\", "
+	headerString += "oauth_token=\"#{OAuth::Helper::escape(twitter_config[:accessToken])}\", "
+	headerString += "oauth_version=\"#{OAuth::Helper::escape(twitter_config[:oauthVersion])}\""
 
-makeRequest()
+	req = Net::HTTP::Post.new(apiPage)
+	req.add_field('Authorization', headerString)
+	req.body = postParameters
+
+#	res = twitterApi.request(req)
+	puts req.body
+end
